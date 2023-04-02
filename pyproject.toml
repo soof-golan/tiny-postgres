@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "tiny-postgres"
+version = "0.1.0"
+description = ""
+authors = ["Soof Golan <pip@soofgolan.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "tiny_postgres"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+typer = {extras = ["all"], version = "^0.7.0"}
+pg8000 = "^1.29.4"
+retry = "^0.9.2"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.3.0"
+ruff = "^0.0.260"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.build]
+generate-setup-file = true
+script = "build.py"
