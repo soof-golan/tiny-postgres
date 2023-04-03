@@ -106,22 +106,10 @@ def _compile_postgres(
     build_contrib=True,
     produce_compile_commands_json=False,
 ):
-    proc = subprocess.run(
-        ["git", "submodule", "status", "vendor/postgres"],
-        stdout=subprocess.PIPE,
-        universal_newlines=True,
-        check=True,
-        cwd=ROOT_PATH,
-    )
-    status = proc.stdout
-    if status[0] == "-":
-        print(
-            "postgres submodule not initialized, "
-            "run `git submodule init; git submodule update`"
-        )
-        exit(1)
-
-    source_stamp = _get_pg_source_stamp()
+    # TODO: use a better way to detect changes in the source
+    # source_stamp = _get_pg_source_stamp()
+    source_stamp = None
+    # logging.error(source_stamp)
 
     postgres_build = (build_base / "postgres").resolve()
     postgres_src = ROOT_PATH / "vendor" / "postgres"
@@ -133,7 +121,7 @@ def _compile_postgres(
     else:
         build_stamp = None
 
-    is_outdated = source_stamp != build_stamp
+    is_outdated = False  # source_stamp != build_stamp
 
     if is_outdated or force_build:
         system = platform.system()
@@ -202,8 +190,8 @@ def _compile_postgres(
                 check=True,
             )
 
-        with open(postgres_build_stamp, "w") as f:
-            f.write(source_stamp)
+        # with open(postgres_build_stamp, "w") as f:
+        #     f.write(source_stamp)
 
         if produce_compile_commands_json:
             shutil.copy(
@@ -212,25 +200,22 @@ def _compile_postgres(
             )
 
 
-def _get_git_rev(repo, ref):
-    output = subprocess.check_output(
-        ["git", "ls-remote", repo, ref],
-        universal_newlines=True,
-    ).strip()
-
-    if output:
-        rev, _ = output.split()
-        rev = rev.strip()
-    else:
-        rev = ""
-
-    # The name can be a branch or tag, so we attempt to look it up
-    # with ls-remote. If we don't find anything, we assume it's a
-    # commit hash.
-    return rev if rev else ref
-
-
 def _get_pg_source_stamp():
+    proc = subprocess.run(
+        ["git", "submodule", "status", "vendor/postgres"],
+        stdout=subprocess.PIPE,
+        universal_newlines=True,
+        check=True,
+        cwd=ROOT_PATH,
+    )
+    status = proc.stdout
+    if status[0] == "-":
+        print(
+            "postgres submodule not initialized, "
+            "run `git submodule init; git submodule update`"
+        )
+        exit(1)
+
     output = subprocess.check_output(
         ["git", "submodule", "status", "vendor/postgres"],
         universal_newlines=True,
