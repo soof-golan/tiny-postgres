@@ -25,3 +25,16 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["tiny_postgres"]
+
+[tool.ruff]
+exclude = ["vendor"]
+
+[tool.black]
+line-length = 88
+target-version = ["py39", "py310"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  | vendor
+)/
+'''
