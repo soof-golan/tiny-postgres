@@ -15,12 +15,15 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "black >= 23.3.0,<24.0.0",
-    "ruff >= 0.0.260,<1.0.0",
     "build >= 0.7.0,<1.0.0",
+    "ruff >= 0.0.260,<1.0.0",
+    "thx >= 0.5.1,<1.0.0",
+    "ufmt >= 2.1.0,<3.0.0",
+    "usort >= 1.0.6,<2.0.0",
 ]
 
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools", "wheel", "build", "setuptools_scm"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
@@ -38,3 +41,23 @@ extend-exclude = '''
   | vendor
 )/
 '''
+
+[tool.thx]
+default = ["lint"]
+
+[tool.thx.values]
+module = "tiny_postgres"
+
+[tool.thx.jobs.format]
+run = [
+    "ufmt format {module}",
+    "ruff --fix {module}",
+]
+show_output = true
+
+[tool.thx.jobs.lint]
+run = [
+    "ufmt check {module}",
+    "ruff {module}",
+]
+show_output = true
