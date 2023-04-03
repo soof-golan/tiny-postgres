@@ -168,68 +168,7 @@ class TinyPostgres:
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         try:
             self.stop()
-            pg_data_cleanup(self.config)
         except RuntimeError:
             self.kill()
-            self._cleanup()
+        self._cleanup()
 
-
-@retry(pg8000.Error, tries=10, delay=0.1, backoff=2, logger=logger, max_delay=5)
-def connect(ctx: DBConfig) -> pg8000.dbapi.Connection:
-    return pg8000.dbapi.connect(
-        user=getpass.getuser(),
-        host="localhost",
-        port=ctx.port,
-        database="postgres",
-    )
-
-
-def test_connection(ctx: DBConfig) -> None:
-    """
-    Test the connection to a postgres server.
-
-    :param ctx: The database context.
-    """
-    logger.debug(f"Testing connection to postgres server on port {ctx.port}")
-    conn = connect(ctx)
-    logger.debug(f"successfully connected to postgres server {conn=}")
-    conn.close()
-    logger.debug(f"Connection to postgres server on port {ctx.port} successful")
-
-
-def pg_data_cleanup(db_config: DBConfig):
-    """
-    Cleanup the postgres data directory.
-    :param db_config: The database configuration.
-    :return:
-    """
-    if db_config.delete_on_exit:
-        logger.debug(f"Cleaning up postgres data directory {db_config.pg_data}")
-        shutil.rmtree(db_config.pg_data, ignore_errors=True)
-
-
-@contextmanager
-def postgres(config: DBConfig) -> Generator[TinyPostgres, None, None]:
-    status: DBStatus | None = None
-    pg_ctl = TinyPostgres(config)
-    try:
-        logger.debug(
-            f"Starting postgres server on port {config.port}, data dir {config.pg_data}"
-        )
-        pg_ctl.initdb()
-        pg_ctl.start()
-        test_connection(config)
-        status = pg_ctl.status()
-        logger.debug(f"postgres server status: {status}")
-        yield pg_ctl
-    finally:
-        try:
-            pg_ctl.stop()
-        except RuntimeError:
-            pg_ctl.kill()
-            if pg_ctl.config.pidfile.exists():
-                pid = int(config.pidfile.read_text())
-                os.kill(pid, signal.SIGKILL)
-        if config.delete_on_exit:
-            logger.debug(f"Cleaning up postgres data directory {config.pg_data}")
-            shutil.rmtree(config.pg_data, ignore_errors=True)
