@@ -24,7 +24,9 @@ class PgCtlError(Exception):
     """
     An error occurred while running pg_ctl.
     """
+
     pass
+
 
 class TinyPostgres:
     def __init__(self, config: DBConfig):
@@ -175,7 +177,12 @@ class TinyPostgres:
         self._test_connection()
         return self
 
-    def __exit__(self, exc_type: Type[Exception] | None, exc_val: Exception | None, exc_tb: TracebackType | None) -> None:
+    def __exit__(
+        self,
+        exc_type: Type[Exception] | None,
+        exc_val: Exception | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """
         Stop the postgres server and run a cleanup.
         :param exc_type: The type of exception that was raised.
@@ -188,4 +195,3 @@ class TinyPostgres:
         except PgCtlError:
             self.kill()
         self._cleanup()
-

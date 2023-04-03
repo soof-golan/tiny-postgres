@@ -43,30 +43,33 @@ from setuptools.command import build as setuptools_build
 
 ROOT_PATH = pathlib.Path(__file__).parent.resolve()
 
+
 def _get_env_with_openssl_flags():
     env = dict(os.environ)
-    cflags = env.get('TINYPG_BUILD_OPENSSL_CFLAGS')
-    ldflags = env.get('TINYPG_BUILD_OPENSSL_LDFLAGS')
+    cflags = env.get("TINYPG_BUILD_OPENSSL_CFLAGS")
+    ldflags = env.get("TINYPG_BUILD_OPENSSL_LDFLAGS")
 
-    if not (cflags or ldflags) and platform.system() == 'Darwin':
+    if not (cflags or ldflags) and platform.system() == "Darwin":
         try:
-            openssl_prefix = pathlib.Path(subprocess.check_output(
-                ['brew', '--prefix', 'openssl'], text=True
-            ).strip())
+            openssl_prefix = pathlib.Path(
+                subprocess.check_output(
+                    ["brew", "--prefix", "openssl"], text=True
+                ).strip()
+            )
         except (FileNotFoundError, subprocess.CalledProcessError):
             openssl_prefix = None
         else:
-            pc_path = str(openssl_prefix / 'lib' / 'pkgconfig')
-            if 'PKG_CONFIG_PATH' in env:
-                env['PKG_CONFIG_PATH'] += f':{pc_path}'
+            pc_path = str(openssl_prefix / "lib" / "pkgconfig")
+            if "PKG_CONFIG_PATH" in env:
+                env["PKG_CONFIG_PATH"] += f":{pc_path}"
             else:
-                env['PKG_CONFIG_PATH'] = pc_path
+                env["PKG_CONFIG_PATH"] = pc_path
         try:
             cflags = subprocess.check_output(
-                ['pkg-config', '--cflags', 'openssl'], text=True, env=env
+                ["pkg-config", "--cflags", "openssl"], text=True, env=env
             ).strip()
             ldflags = subprocess.check_output(
-                ['pkg-config', '--libs', 'openssl'], text=True, env=env
+                ["pkg-config", "--libs", "openssl"], text=True, env=env
             ).strip()
         except FileNotFoundError:
             # pkg-config is not installed
@@ -80,45 +83,52 @@ def _get_env_with_openssl_flags():
             return env
 
     if cflags:
-        if 'CPPFLAGS' in env:
-            env['CPPFLAGS'] += f' {cflags}'
-        elif 'CFLAGS' in env:
-            env['CFLAGS'] += f' {cflags}'
+        if "CPPFLAGS" in env:
+            env["CPPFLAGS"] += f" {cflags}"
+        elif "CFLAGS" in env:
+            env["CFLAGS"] += f" {cflags}"
         else:
-            env['CPPFLAGS'] = cflags
+            env["CPPFLAGS"] = cflags
     if ldflags:
-        if 'LDFLAGS' in env:
-            env['LDFLAGS'] += f' {ldflags}'
+        if "LDFLAGS" in env:
+            env["LDFLAGS"] += f" {ldflags}"
         else:
-            env['LDFLAGS'] = ldflags
+            env["LDFLAGS"] = ldflags
     return env
 
 
-def _compile_postgres(build_base, *,
-                      force_build=False, fresh_build=True,
-                      run_configure=True, build_contrib=True,
-                      produce_compile_commands_json=False):
+def _compile_postgres(
+    build_base,
+    *,
+    force_build=False,
+    fresh_build=True,
+    run_configure=True,
+    build_contrib=True,
+    produce_compile_commands_json=False,
+):
     proc = subprocess.run(
-        ['git', 'submodule', 'status', 'postgres'],
+        ["git", "submodule", "status", "vendor/postgres"],
         stdout=subprocess.PIPE,
         universal_newlines=True,
         check=True,
         cwd=ROOT_PATH,
     )
     status = proc.stdout
-    if status[0] == '-':
-        print('postgres submodule not initialized, '
-              'run `git submodule init; git submodule update`')
+    if status[0] == "-":
+        print(
+            "postgres submodule not initialized, "
+            "run `git submodule init; git submodule update`"
+        )
         exit(1)
 
     source_stamp = _get_pg_source_stamp()
 
-    postgres_build = (build_base / 'postgres').resolve()
-    postgres_src = ROOT_PATH / 'postgres'
-    postgres_build_stamp = postgres_build / 'stamp'
+    postgres_build = (build_base / "postgres").resolve()
+    postgres_src = ROOT_PATH / "vendor" / "postgres"
+    postgres_build_stamp = postgres_build / "stamp"
 
     if postgres_build_stamp.exists():
-        with open(postgres_build_stamp, 'r') as f:
+        with open(postgres_build_stamp, "r") as f:
             build_stamp = f.read()
     else:
         build_stamp = None
@@ -127,57 +137,72 @@ def _compile_postgres(build_base, *,
 
     if is_outdated or force_build:
         system = platform.system()
-        if system == 'Darwin':
-            uuidlib = 'e2fs'
-        elif system == 'Linux':
-            uuidlib = 'e2fs'
+        if system == "Darwin":
+            uuidlib = "e2fs"
+        elif system == "Linux":
+            uuidlib = "e2fs"
         else:
-            raise NotImplementedError('unsupported system: {}'.format(system))
+            raise NotImplementedError("unsupported system: {}".format(system))
 
         if fresh_build and postgres_build.exists():
             shutil.rmtree(postgres_build)
-        build_dir = postgres_build / 'build'
+        build_dir = postgres_build / "build"
         if not build_dir.exists():
             build_dir.mkdir(parents=True)
         if not run_configure:
-            run_configure = not (build_dir / 'Makefile').exists()
+            run_configure = not (build_dir / "Makefile").exists()
 
         if run_configure or fresh_build or is_outdated:
             env = _get_env_with_openssl_flags()
-            subprocess.run([
-                str(postgres_src / 'configure'),
-                '--prefix=' + str(postgres_build / 'install'),
-                '--with-openssl',
-                '--with-uuid=' + uuidlib,
-            ], check=True, cwd=str(build_dir), env=env)
+            subprocess.run(
+                [
+                    str(postgres_src / "configure"),
+                    "--prefix=" + str(postgres_build / "install"),
+                    "--with-openssl",
+                    "--with-uuid=" + uuidlib,
+                ],
+                check=True,
+                cwd=str(build_dir),
+                env=env,
+            )
 
         if produce_compile_commands_json:
-            make = ['bear', '--', 'make']
+            make = ["bear", "--", "make"]
         else:
-            make = ['make']
+            make = ["make"]
 
         subprocess.run(
-            make + ['MAKELEVEL=0', '-j', str(max(os.cpu_count() - 1, 1))],
-            cwd=str(build_dir), check=True)
+            make + ["MAKELEVEL=0", "-j", str(max(os.cpu_count() - 1, 1))],
+            cwd=str(build_dir),
+            check=True,
+        )
 
         if build_contrib or fresh_build or is_outdated:
             subprocess.run(
-                make + [
-                    '-C', 'contrib', 'MAKELEVEL=0', '-j',
-                    str(max(os.cpu_count() - 1, 1))
+                make
+                + [
+                    "-C",
+                    "contrib",
+                    "MAKELEVEL=0",
+                    "-j",
+                    str(max(os.cpu_count() - 1, 1)),
                 ],
-                cwd=str(build_dir), check=True)
+                cwd=str(build_dir),
+                check=True,
+            )
 
         subprocess.run(
-            ['make', 'MAKELEVEL=0', 'install'],
-            cwd=str(build_dir), check=True)
+            ["make", "MAKELEVEL=0", "install"], cwd=str(build_dir), check=True
+        )
 
         if build_contrib or fresh_build or is_outdated:
             subprocess.run(
-                ['make', '-C', 'contrib', 'MAKELEVEL=0', 'install'],
-                cwd=str(build_dir), check=True)
+                ["make", "-C", "contrib", "MAKELEVEL=0", "install"],
+                cwd=str(build_dir),
+                check=True,
+            )
 
-        with open(postgres_build_stamp, 'w') as f:
+        with open(postgres_build_stamp, "w") as f:
             f.write(source_stamp)
 
         if produce_compile_commands_json:
@@ -189,7 +214,7 @@ def _compile_postgres(build_base, *,
 
 def _get_git_rev(repo, ref):
     output = subprocess.check_output(
-        ['git', 'ls-remote', repo, ref],
+        ["git", "ls-remote", repo, ref],
         universal_newlines=True,
     ).strip()
 
@@ -197,7 +222,7 @@ def _get_git_rev(repo, ref):
         rev, _ = output.split()
         rev = rev.strip()
     else:
-        rev = ''
+        rev = ""
 
     # The name can be a branch or tag, so we attempt to look it up
     # with ls-remote. If we don't find anything, we assume it's a
@@ -207,11 +232,11 @@ def _get_git_rev(repo, ref):
 
 def _get_pg_source_stamp():
     output = subprocess.check_output(
-        ['git', 'submodule', 'status', 'postgres'],
+        ["git", "submodule", "status", "vendor/postgres"],
         universal_newlines=True,
         cwd=ROOT_PATH,
     )
-    revision, _, _ = output[1:].partition(' ')
+    revision, _, _ = output[1:].partition(" ")
     # I don't know why we needed the first empty char, but we don't want to
     # force everyone to rebuild postgres either
     source_stamp = output[0] + revision
@@ -221,22 +246,20 @@ def _get_pg_source_stamp():
 class build(setuptools_build.build):
     user_options = setuptools_build.build.user_options
 
-    sub_commands = (
-        [
-            *setuptools_build.build.sub_commands,
-            ("build_postgres", lambda self: True),
-        ]
-    )
+    sub_commands = [
+        *setuptools_build.build.sub_commands,
+        ("build_postgres", lambda self: True),
+    ]
 
 
 class build_postgres(setuptools.Command):
     description = "build postgres"
 
     user_options = [
-        ('configure', None, 'run ./configure'),
-        ('build-contrib', None, 'build contrib'),
-        ('fresh-build', None, 'rebuild from scratch'),
-        ('compile-commands', None, 'produce compile-commands.json using bear'),
+        ("configure", None, "run ./configure"),
+        ("build-contrib", None, "build contrib"),
+        ("fresh-build", None, "rebuild from scratch"),
+        ("compile-commands", None, "produce compile-commands.json using bear"),
     ]
 
     editable_mode: bool
@@ -254,7 +277,7 @@ class build_postgres(setuptools.Command):
     def run(self, *args, **kwargs):
         if os.environ.get("TINYPG_BUILD_PACKAGE"):
             return
-        build = self.get_finalized_command('build')
+        build = self.get_finalized_command("build")
         _compile_postgres(
             pathlib.Path(build.build_base).resolve(),
             force_build=True,
@@ -269,8 +292,8 @@ setuptools.setup(
     name="tiny-postgres",
     version="0.1.0",
     cmdclass={
-        'build': build,
-        'build_postgres': build_postgres,
+        "build": build,
+        "build_postgres": build_postgres,
     },
     py_modules=[],
 )
