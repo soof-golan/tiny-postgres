@@ -11,7 +11,6 @@ Copyright 2023 - present, Soof Golan.
 
 Original License below
 
-"""
 #
 # This source file is part of the EdgeDB open source project.
 #
@@ -29,6 +28,7 @@ Original License below
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""
 
 
 import os
