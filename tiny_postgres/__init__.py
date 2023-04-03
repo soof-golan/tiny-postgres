@@ -7,15 +7,15 @@ import re
 import shutil
 import signal
 import subprocess
-from contextlib import contextmanager
-from typing import Generator
+from types import TracebackType
+from typing import Type
 
 import pg8000.dbapi
 from retry import retry
 
-from tiny_postgres.db_status import DBStatus
-from tiny_postgres.db_config import DBConfig
-from tiny_postgres.env import get_pg_environ, get_postgres_bin_dir
+from .db_config import DBConfig
+from .db_status import DBStatus
+from .env import get_pg_environ, get_postgres_bin_dir
 
 logger = logging.getLogger(__name__)
 
@@ -167,12 +167,22 @@ class TinyPostgres:
             shutil.rmtree(self.config.pg_data, ignore_errors=True)
 
     def __enter__(self) -> TinyPostgres:
-        self.initdb()
+        """
+        Start the postgres server and test the connection.
+        :return:
+        """
         self.start()
         self._test_connection()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: Type[Exception] | None, exc_val: Exception | None, exc_tb: TracebackType | None) -> None:
+        """
+        Stop the postgres server and run a cleanup.
+        :param exc_type: The type of exception that was raised.
+        :param exc_val: The exception that was raised.
+        :param exc_tb: The traceback of the exception that was raised.
+        :return:
+        """
         try:
             self.stop()
         except PgCtlError:
