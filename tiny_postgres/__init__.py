@@ -20,6 +20,12 @@ from tiny_postgres.env import get_pg_environ, get_postgres_bin_dir
 logger = logging.getLogger(__name__)
 
 
+class PgCtlError(Exception):
+    """
+    An error occurred while running pg_ctl.
+    """
+    pass
+
 class TinyPostgres:
     def __init__(self, config: DBConfig):
         self.config = config
@@ -31,6 +37,7 @@ class TinyPostgres:
             "capture_output": True,
             "timeout": 10,
         }
+        self.initdb()
 
     def _run(self, args: list[str]):
         """
@@ -52,7 +59,7 @@ class TinyPostgres:
         """
         if result.returncode != 0:
             logger.error(result.stderr)
-            raise RuntimeError(
+            raise PgCtlError(
                 f"pg_ctl failed with code {result.returncode}: {result.stderr}"
             )
         logger.debug(result.stdout)
@@ -168,7 +175,7 @@ class TinyPostgres:
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         try:
             self.stop()
-        except RuntimeError:
+        except PgCtlError:
             self.kill()
         self._cleanup()
 
