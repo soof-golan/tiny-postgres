@@ -1,3 +1,17 @@
+"""
+This is a modified setup.py file from the edgedb project.
+The original file can be found at:
+    https://github.com/edgedb/edgedb/blob/master/setup.py
+
+The original file is licensed under the Apache License, Version 2.0.
+
+The modifications are licensed under the MIT License.
+
+Copyright 2023 - present, Soof Golan.
+
+Original License below
+
+"""
 #
 # This source file is part of the EdgeDB open source project.
 #
