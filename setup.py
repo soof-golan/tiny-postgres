@@ -27,6 +27,8 @@ import subprocess
 import setuptools
 from setuptools.command import build as setuptools_build
 
+ROOT_PATH = pathlib.Path(__file__).parent.resolve()
+
 def _get_env_with_openssl_flags():
     env = dict(os.environ)
     cflags = env.get('TINYPG_BUILD_OPENSSL_CFLAGS')
