@@ -4,13 +4,13 @@ import os
 from pathlib import Path
 
 
-def get_build_dir() -> Path:
+def get_postgres_dir() -> Path:
     """
     Get the path to the build directory.
 
     :return: The path to the build directory.
     """
-    return Path(__file__).parent.parent / "build"
+    return Path(__file__).parent / "_postgres"
 
 
 def get_postgres_bin_dir() -> Path:
@@ -19,7 +19,7 @@ def get_postgres_bin_dir() -> Path:
 
     :return: The path to the postgres binaries.
     """
-    return get_build_dir() / "postgres" / "install" / "bin"
+    return get_postgres_dir() / "bin"
 
 
 def get_postgres_lib_dir() -> Path:
@@ -28,7 +28,7 @@ def get_postgres_lib_dir() -> Path:
 
     :return: The path to the postgres libraries.
     """
-    return get_build_dir() / "postgres" / "install" / "lib"
+    return get_postgres_dir() / "lib"
 
 
 def get_pg_environ():

@@ -112,6 +112,7 @@ def _compile_postgres(
     # logging.error(source_stamp)
 
     postgres_build = (build_base / "postgres").resolve()
+    postgres_dst = ROOT_PATH / "tiny_postgres" / "_postgres"
     postgres_src = ROOT_PATH / "vendor" / "postgres"
     postgres_build_stamp = postgres_build / "stamp"
 
@@ -198,6 +199,11 @@ def _compile_postgres(
                 build_dir / "compile_commands.json",
                 postgres_src / "compile_commands.json",
             )
+        shutil.rmtree(postgres_dst, ignore_errors=True)
+        shutil.copytree(
+            postgres_build / "install",
+            postgres_dst
+        )
 
 
 def _get_pg_source_stamp():
